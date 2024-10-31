@@ -4,7 +4,7 @@ import streamlit as st
 import requests
 
 # Lambda function URL
-LAMBDA_API_URL = "https://<your_lambda_function_url>"
+LAMBDA_API_URL = "https://zxjhrr7n44.execute-api.ap-northeast-1.amazonaws.com/generates3url"
 
 st.title("Upload PDF to S3")
 
