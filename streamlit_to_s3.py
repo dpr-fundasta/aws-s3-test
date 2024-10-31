@@ -2,16 +2,14 @@ import streamlit as st
 import boto3
 import uuid  # For unique file names
 from botocore.exceptions import NoCredentialsError, ClientError
-import json
 
 # AWS configuration
-AWS_ACCESS_KEY = st.secrets["AWS_ACCESS_KEY"] #"your-access-key-id"
-AWS_SECRET_KEY = st.secrets["AWS_SECRET_KEY"] #"your-secret-access-key"
-AWS_REGION = st.secrets["AWS_REGION"]         #"your-region"
+AWS_ACCESS_KEY = st.secrets["AWS_ACCESS_KEY"]
+AWS_SECRET_KEY = st.secrets["AWS_SECRET_KEY"]
+AWS_REGION = st.secrets["AWS_REGION"]
 S3_BUCKET = st.secrets["S3_BUCKET"]
-LAMBDA_FUNCTION_NAME = st.secrets["LAMBDA_FUNCTION_NAME"] #"your-lambda-function-name"
 
-# Initialize S3 and Lambda clients
+# Initialize S3 client
 s3_client = boto3.client(
     's3',
     aws_access_key_id=AWS_ACCESS_KEY,
@@ -19,12 +17,6 @@ s3_client = boto3.client(
     region_name=AWS_REGION
 )
 
-lambda_client = boto3.client(
-    'lambda',
-    aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY,
-    region_name=AWS_REGION
-)
 def upload_pdf_to_s3(file):
     """Upload the PDF to S3 and return the S3 URL."""
     if file.size > 10 * 1024 * 1024:  # Example limit: 10 MB
@@ -44,24 +36,18 @@ def upload_pdf_to_s3(file):
         st.error(f"Failed to upload PDF: {e.response['Error']['Message']}")
         return None
 
-def invoke_lambda(s3_url):
-    """Invoke the Lambda function with the S3 URL as payload."""
-    payload = {"s3_url": s3_url}
+def list_bucket_contents():
+    """List the contents of the S3 bucket."""
     try:
-        response = lambda_client.invoke(
-            FunctionName=LAMBDA_FUNCTION_NAME,
-            InvocationType='RequestResponse',
-            Payload=json.dumps(payload),
-        )
-        response_payload = response['Payload'].read().decode('utf-8')
-        if response['StatusCode'] == 200:
-            return response_payload
+        response = s3_client.list_objects_v2(Bucket=S3_BUCKET)
+        if 'Contents' in response:
+            files = [item['Key'] for item in response['Contents']]
+            return files
         else:
-            st.error(f"Error invoking Lambda function: {response['StatusCode']}")
-            return None
+            return []
 
     except ClientError as e:
-        st.error(f"Failed to invoke Lambda function: {e.response['Error']['Message']}")
+        st.error(f"Failed to list bucket contents: {e.response['Error']['Message']}")
         return None
 
 # Streamlit UI
@@ -76,9 +62,13 @@ if uploaded_file is not None:
 
         if s3_url:
             st.sidebar.success(f"PDF uploaded to: {s3_url}")
-            
-            # Invoke Lambda function
-            response = invoke_lambda(s3_url)
 
-            if response:
-                st.sidebar.success(f"Upserting to Database. Response: {response}")
+# List bucket contents button
+if st.sidebar.button("List Bucket Contents"):
+    files = list_bucket_contents()
+    if files:
+        st.sidebar.write("Files in bucket:")
+        for file in files:
+            st.sidebar.write(file)
+    else:
+        st.sidebar.write("No files found in the bucket.")
