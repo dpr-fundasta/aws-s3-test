@@ -9,9 +9,16 @@ AWS_SECRET_KEY = st.secrets["AWS_SECRET_KEY"]
 AWS_REGION = st.secrets["AWS_REGION"]
 S3_BUCKET = st.secrets["S3_BUCKET"]
 
-# Initialize S3 client
+# Initialize S3 and DynamoDB clients
 s3_client = boto3.client(
     's3',
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY,
+    region_name=AWS_REGION
+)
+
+dynamodb_client = boto3.client(
+    'dynamodb',
     aws_access_key_id=AWS_ACCESS_KEY,
     aws_secret_access_key=AWS_SECRET_KEY,
     region_name=AWS_REGION
@@ -50,6 +57,17 @@ def list_bucket_contents():
         st.error(f"Failed to list bucket contents: {e.response['Error']['Message']}")
         return None
 
+def list_dynamodb_tables():
+    """List DynamoDB tables."""
+    try:
+        response = dynamodb_client.list_tables()
+        tables = response.get("TableNames", [])
+        return tables
+
+    except ClientError as e:
+        st.error(f"Failed to list DynamoDB tables: {e.response['Error']['Message']}")
+        return None
+
 # Streamlit UI
 st.sidebar.title("FundastA R.A.G Chatbot")
 
@@ -72,3 +90,13 @@ if st.sidebar.button("List Bucket Contents"):
             st.sidebar.write(file)
     else:
         st.sidebar.write("No files found in the bucket.")
+
+# List DynamoDB tables button
+if st.sidebar.button("List DynamoDB Tables"):
+    tables = list_dynamodb_tables()
+    if tables:
+        st.sidebar.write("DynamoDB Tables:")
+        for table in tables:
+            st.sidebar.write(table)
+    else:
+        st.sidebar.write("No DynamoDB tables found.")
