@@ -18,7 +18,7 @@ if pdf_file is not None:
         
         if response.status_code == 200:
             presigned_url = response.json().get("presigned_url")
-            
+            st.write(presigned_url)
             # Step 3: Upload File to S3 using Presigned URL
             files = {"file": (pdf_file.name, pdf_file, "application/pdf")}
             upload_response = requests.put(presigned_url, files=files)
