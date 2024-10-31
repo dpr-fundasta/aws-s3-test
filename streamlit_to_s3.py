@@ -3,8 +3,8 @@
 import streamlit as st
 import requests
 
-# Configure AWS Lambda URL
-LAMBDA_API_URL = "https://zxjhrr7n44.execute-api.ap-northeast-1.amazonaws.com/generates3url"
+# Lambda function URL
+LAMBDA_API_URL = "https://<your_lambda_function_url>"
 
 st.title("Upload PDF to S3")
 
@@ -17,15 +17,18 @@ if pdf_file is not None:
         response = requests.post(LAMBDA_API_URL, json={"filename": pdf_file.name})
         
         if response.status_code == 200:
+            # Extract presigned URL from the Lambda response
             presigned_url = response.json().get("presigned_url")
-            st.write(presigned_url)
-            # Step 3: Upload File to S3 using Presigned URL
+            
+            # Step 3: Upload File to S3 using the Presigned URL
             files = {"file": (pdf_file.name, pdf_file, "application/pdf")}
-            upload_response = requests.put(presigned_url, files=files)
+            
+            # We use PUT here to match the presigned URL's expected method
+            upload_response = requests.put(presigned_url, data=pdf_file.getvalue(), headers={"Content-Type": "application/pdf"})
             
             if upload_response.status_code == 200:
                 st.success("File uploaded successfully to S3!")
             else:
-                st.error("Failed to upload file to S3.")
+                st.error("Failed to upload file to S3. Status code: " + str(upload_response.status_code))
         else:
             st.error("Failed to get presigned URL from Lambda.")
