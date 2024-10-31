@@ -1,35 +1,31 @@
-import os
+# streamlit_app.py
+
 import streamlit as st
-import boto3
+import requests
 
-# Fetch AWS credentials from environment variables
-aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
-aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+# Configure AWS Lambda URL
+LAMBDA_API_URL = "https://zxjhrr7n44.execute-api.ap-northeast-1.amazonaws.com/generates3url"
 
-# Initialize the S3 client
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=aws_access_key_id,
-    aws_secret_access_key=aws_secret_access_key,
-)
+st.title("Upload PDF to S3")
 
-# Define the bucket name
-BUCKET_NAME = "fileupload-deepu"
+# Step 1: File Upload Selection
+pdf_file = st.file_uploader("Choose a PDF file to upload", type="pdf")
 
-def list_buckets():
-    # Fetch the list of buckets from S3
-    buckets_resp = s3.list_buckets()
-    return [bucket['Name'] for bucket in buckets_resp['Buckets']]
-
-# Streamlit app
-st.title("S3 Bucket List")
-
-# Button to retrieve and display buckets
-if st.button("List Buckets"):
-    buckets = list_buckets()
-    if buckets:
-        st.write("Available Buckets:")
-        for bucket in buckets:
-            st.write(f"- {bucket}")
-    else:
-        st.write("No buckets found.")
+if pdf_file is not None:
+    if st.button("Upload"):
+        # Step 2: Request Presigned URL from AWS Lambda
+        response = requests.post(LAMBDA_API_URL, json={"filename": pdf_file.name})
+        
+        if response.status_code == 200:
+            presigned_url = response.json().get("presigned_url")
+            
+            # Step 3: Upload File to S3 using Presigned URL
+            files = {"file": (pdf_file.name, pdf_file, "application/pdf")}
+            upload_response = requests.put(presigned_url, files=files)
+            
+            if upload_response.status_code == 200:
+                st.success("File uploaded successfully to S3!")
+            else:
+                st.error("Failed to upload file to S3.")
+        else:
+            st.error("Failed to get presigned URL from Lambda.")
