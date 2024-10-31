@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # Define the URL for the AWS API Gateway
-api_gateway_url = "https://zxjhrr7n44.execute-api.ap-northeast-1.amazonaws.com/generates3url"
+api_gateway_url = "https://1udz1nv5a4.execute-api.ap-northeast-1.amazonaws.com/default/FundastA_Chatbot_FileUpload"
 
 st.title("PDF Upload to AWS")
 
@@ -22,4 +22,4 @@ if uploaded_file is not None and st.button("Upload PDF"):
     if response.status_code == 200:
         st.success("PDF uploaded successfully.")
     else:
-        st.error(f"Failed to upload PDF.{response}")
+        st.error("Failed to upload PDF.")
