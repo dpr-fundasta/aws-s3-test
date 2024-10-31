@@ -22,4 +22,4 @@ if uploaded_file is not None and st.button("Upload PDF"):
     if response.status_code == 200:
         st.success("PDF uploaded successfully.")
     else:
-        st.error("Failed to upload PDF.")
+        st.error(f"Failed to upload PDF.{response}")
