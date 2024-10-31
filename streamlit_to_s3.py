@@ -2,25 +2,21 @@ import streamlit as st
 import boto3
 import uuid  # For unique file names
 from botocore.exceptions import NoCredentialsError, ClientError
+import json
 
 # AWS configuration
-AWS_ACCESS_KEY = st.secrets["AWS_ACCESS_KEY"]
-AWS_SECRET_KEY = st.secrets["AWS_SECRET_KEY"]
-AWS_REGION = st.secrets["AWS_REGION"]
+AWS_ACCESS_KEY = st.secrets["AWS_ACCESS_KEY"]  # "your-access-key-id"
+AWS_SECRET_KEY = st.secrets["AWS_SECRET_KEY"]  # "your-secret-access-key"
+AWS_SESSION_TOKEN = st.secrets["AWS_SESSION_TOKEN"]  # "your-session-token"
+AWS_REGION = st.secrets["AWS_REGION"]  # "your-region"
 S3_BUCKET = st.secrets["S3_BUCKET"]
 
-# Initialize S3 and DynamoDB clients
+# Initialize S3 client with session token
 s3_client = boto3.client(
     's3',
     aws_access_key_id=AWS_ACCESS_KEY,
     aws_secret_access_key=AWS_SECRET_KEY,
-    region_name=AWS_REGION
-)
-
-dynamodb_client = boto3.client(
-    'dynamodb',
-    aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY,
+    aws_session_token=AWS_SESSION_TOKEN,
     region_name=AWS_REGION
 )
 
@@ -43,31 +39,6 @@ def upload_pdf_to_s3(file):
         st.error(f"Failed to upload PDF: {e.response['Error']['Message']}")
         return None
 
-def list_bucket_contents():
-    """List the contents of the S3 bucket."""
-    try:
-        response = s3_client.list_objects_v2(Bucket=S3_BUCKET)
-        if 'Contents' in response:
-            files = [item['Key'] for item in response['Contents']]
-            return files
-        else:
-            return []
-
-    except ClientError as e:
-        st.error(f"Failed to list bucket contents: {e.response['Error']['Message']}")
-        return None
-
-def list_dynamodb_tables():
-    """List DynamoDB tables."""
-    try:
-        response = dynamodb_client.list_tables()
-        tables = response.get("TableNames", [])
-        return tables
-
-    except ClientError as e:
-        st.error(f"Failed to list DynamoDB tables: {e.response['Error']['Message']}")
-        return None
-
 # Streamlit UI
 st.sidebar.title("FundastA R.A.G Chatbot")
 
@@ -80,23 +51,3 @@ if uploaded_file is not None:
 
         if s3_url:
             st.sidebar.success(f"PDF uploaded to: {s3_url}")
-
-# List bucket contents button
-if st.sidebar.button("List Bucket Contents"):
-    files = list_bucket_contents()
-    if files:
-        st.sidebar.write("Files in bucket:")
-        for file in files:
-            st.sidebar.write(file)
-    else:
-        st.sidebar.write("No files found in the bucket.")
-
-# List DynamoDB tables button
-if st.sidebar.button("List DynamoDB Tables"):
-    tables = list_dynamodb_tables()
-    if tables:
-        st.sidebar.write("DynamoDB Tables:")
-        for table in tables:
-            st.sidebar.write(table)
-    else:
-        st.sidebar.write("No DynamoDB tables found.")
