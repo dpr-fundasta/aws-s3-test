@@ -6,13 +6,13 @@ import base64
 API_URL = "https://j0kn8pau5l.execute-api.ap-northeast-1.amazonaws.com/develop/upload"  
 
 # Streamlit app
-st.sidebar.title("FundastA R.A.G Chatbot")
+st.title("PDF Uploader to S3 via API")
 
 # File uploader widget
-uploaded_file = st.sidebar.file_uploader("Choose a PDF file", type="pdf")
+uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
 # Display file size limit
-st.sidebar.write("Maximum file size: 10 MB")
+st.write("Maximum file size: 10 MB")
 
 if uploaded_file:
     # Check file size
@@ -35,11 +35,19 @@ if uploaded_file:
             "file_content": file_content_base64
         }
         
-  
+        # Send the POST request to the API
+        with st.spinner("Uploading file..."):
+            try:
+                response = requests.post(API_URL, json=payload)
+            except requests.RequestException as e:
+                response = None
+                st.error(f"Request failed: {e}")
         
-        # Check the response
-        if response.status_code == 200:
-            st.sidebar.success("File uploaded successfully!")
-        else:
-            st.sidebar.error(f"Failed to upload file. Status code: {response.status_code}")
+        # Check the response if it's defined
+        if response and response.status_code == 200:
+            st.success("File uploaded successfully!")
+        elif response:
+            st.error(f"Failed to upload file. Status code: {response.status_code}")
             st.write(response.text)
+        else:
+            st.error("An error occurred while making the request.")
