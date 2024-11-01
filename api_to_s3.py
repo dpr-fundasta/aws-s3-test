@@ -35,9 +35,7 @@ if uploaded_file:
             "file_content": file_content_base64
         }
         
-        # Send the POST request to the API
-        with st.sidebar.spinner("Uploading file..."):
-            response = requests.post(API_URL, json=payload)
+  
         
         # Check the response
         if response.status_code == 200:
